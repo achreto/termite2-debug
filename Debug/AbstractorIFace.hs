@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards, MultiParamTypeClasses, FlexibleInstances, TypeSynonymInstances, UndecidableInstances, ImplicitParams, TupleSections, TemplateHaskell, ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts, RecordWildCards, MultiParamTypeClasses, FlexibleInstances, TypeSynonymInstances, UndecidableInstances, ImplicitParams, TupleSections, TemplateHaskell, ConstraintKinds #-}
 
 -- Interface to the abstraction library
 
