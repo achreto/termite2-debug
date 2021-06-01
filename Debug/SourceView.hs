@@ -1,4 +1,4 @@
-{-# LANGUAGE ImplicitParams, RecordWildCards, ScopedTypeVariables, TupleSections, TemplateHaskell, ConstraintKinds #-}
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, ImplicitParams, RecordWildCards, ScopedTypeVariables, TupleSections, TemplateHaskell, ConstraintKinds #-}
 
 module Debug.SourceView(Debug.SourceView.sourceViewNew, 
                   simulateTransition,
@@ -15,7 +15,7 @@ import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Graphics.UI.Gtk            as G
 import Control.Monad
 import Control.Monad.State
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.ST
 import Control.Monad.ST.Unsafe
 
@@ -75,6 +75,7 @@ import qualified Name              as F
 import qualified Frontend.Type              as F
 import qualified Pos               as F
 import qualified Frontend.TypeOps           as F
+import System.Glib.UTFString
 
 --------------------------------------------------------------
 -- Constants
@@ -99,7 +100,7 @@ instance PP ProcStackFrame where
 
 type ProcStack = [ProcStackFrame]
 
-instance PP ProcStack where
+instance (PP [ProcStackFrame]) where
     pp stack = PP.vcat $ map pp stack
 
 stackToProcStack :: Stack -> ProcStack
@@ -127,7 +128,7 @@ instance PP TraceEntry where
 
 type Trace = [TraceEntry]
 
-instance PP Trace where
+instance (PP [TraceEntry]) where
     pp tr = PP.vcat $ PP.punctuate (PP.char '\n') $ mapIdx (\e i -> pp i PP.<> PP.char ':' PP.$$ pp e) tr
 
 showTrace :: Trace -> String
@@ -680,7 +681,7 @@ stackViewCreate ref = do
     _ <- G.treeViewAppendColumn view col
 
     modifyIORef ref (\sv -> sv{svStackView = view, svStackStore = store, svStackFrame = 0})
-    G.treeViewSetModel view store
+    G.treeViewSetModel view (Just store)
     _ <- G.on view G.rowActivated (stackViewFrameSelected ref)
     panel <- D.framePanelNew (G.toWidget view) "Stack" (return ())
     D.panelGetWidget panel
@@ -863,13 +864,13 @@ watchCreate ref = do
     _ <- G.treeViewAppendColumn view valcol
 
     _ <- G.on view G.keyPressEvent (do key <- G.eventKeyVal
-                                       when (key == G.keyFromName "Delete") $ liftIO $ watchDelete ref
+                                       when (key == (G.keyFromName (stringToGlib "Delete"))) $ liftIO $ watchDelete ref
                                        when (isJust $ G.keyToChar key)      $ liftIO $ (do (path, _) <- G.treeViewGetCursor view
                                                                                            G.treeViewSetCursor view path (Just $ (namecol, True)))
                                        return True)
     modifyIORef ref (\sv -> sv{svWatchView = view, svWatchStore = store})
 
-    G.treeViewSetModel view store
+    G.treeViewSetModel view (Just store)
     panel <- D.framePanelNew (G.toWidget view) "Watch" (return ())
     D.panelGetWidget panel
 
@@ -925,7 +926,7 @@ sourceWindowCreate ref = do
     G.widgetShow sbar
     G.boxPackStart vbox sbar G.PackNatural 0
     -- transition-in-progress label
-    lprog <- G.labelNew Nothing
+    lprog <- G.labelNew (Just "")
     G.widgetShow lprog
     G.boxPackStart sbar lprog G.PackGrow 0
     G.boxPackEnd sbar codepos G.PackNatural 0
@@ -1018,7 +1019,7 @@ resolveViewCreate ref = do
     G.widgetShow view
     G.boxPackStart vbox view G.PackGrow 0
     store <- G.treeStoreNew []
-    G.treeViewSetModel view store
+    G.treeViewSetModel view (Just store)
 
     -- Variable name column
     namecol <- G.treeViewColumnNew
