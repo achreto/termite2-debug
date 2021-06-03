@@ -66,12 +66,13 @@ refineInitialSet initset =
         initvs  = D.mInitVars  ?model
         varConstr (vname, vtype, (is, _)) = 
             let av = ?absvars M.! vname
-            in conj $ mapMaybe (\i -> let asn = eqConstBE (vconcat $ map varAtIndex is) i
-                                      in case concretiseRel (D.ModelVar vname vtype is : initvs) (asn .& initset) of
-                                              Nothing -> Just $ nt asn
-                                              _       -> Nothing) 
+            in conj $ mapMaybe (\i -> Nothing) -- let asn = eqConstBE (vconcat $ map varAtIndex is) i
+                                      -- in case concretiseRel (D.ModelVar vname vtype is : initvs) (asn .& initset) of
+                                      --        Nothing -> Just $ nt asn
+                                      --        _       -> Nothing)
+                                      -- FIXME: the above doesn't compile yet... :(
                      [0..avarRange av]
-    in conj $ initset : map varConstr statevs
+    in conj $ initset : (map varConstr statevs)
 
 -- Given a concrete state and an abstract label, compute concrete label.  
 -- The abstract label is assumed to be a cube.
